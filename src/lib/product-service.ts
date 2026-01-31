@@ -1,10 +1,9 @@
 import { supabase, SupabaseProduct } from './supabase';
-import { sql } from './db';
 import { Product, Price } from '@/types';
 import { mapSupabaseToProduct } from './product-mapper';
 
 /**
- * Fetches products from Supabase and enriches them with vote data from Neon
+ * Fetches products from Supabase and enriches them with vote data from Supabase
  */
 export async function getProducts(filters?: {
   motif?: string;
@@ -30,32 +29,30 @@ export async function getProducts(filters?: {
       return [];
     }
 
-    // 2. Get vote stats from Neon for these products
+    // 2. Get vote stats from Supabase for these products
     const productIds = supabaseProducts.map((p: SupabaseProduct) => p.id);
 
-    const voteStats = await sql`
-      SELECT
-        product_id,
-        COUNT(*) as vote_count,
-        COUNT(CASE WHEN vote_type = 'ugly' THEN 1 END) as ugly_votes,
-        ROUND(COUNT(CASE WHEN vote_type = 'ugly' THEN 1 END)::numeric /
-              NULLIF(COUNT(*), 0) * 100, 1) as ugliness_percent
-      FROM votes
-      WHERE product_id = ANY(${productIds})
-      GROUP BY product_id
-    `;
+    const { data: votes } = await supabase
+      .from('votes')
+      .select('product_id, vote_type')
+      .in('product_id', productIds);
 
-    // 3. Create lookup map for vote stats
-    const voteStatsMap = new Map(
-      voteStats.map((v: any) => [
-        v.product_id,
-        {
-          vote_count: parseInt(v.vote_count) || 0,
-          ugly_votes: parseInt(v.ugly_votes) || 0,
-          ugliness_percent: parseFloat(v.ugliness_percent) || 0,
-        },
-      ])
-    );
+    // 3. Aggregate votes by product
+    const voteStatsMap = new Map<number, { vote_count: number; ugly_votes: number; ugliness_percent: number }>();
+
+    votes?.forEach((vote) => {
+      const current = voteStatsMap.get(vote.product_id) || { vote_count: 0, ugly_votes: 0, ugliness_percent: 0 };
+      current.vote_count++;
+      if (vote.vote_type === 'ugly') current.ugly_votes++;
+      voteStatsMap.set(vote.product_id, current);
+    });
+
+    // Calculate ugliness percentages
+    voteStatsMap.forEach((stats, productId) => {
+      stats.ugliness_percent = stats.vote_count > 0
+        ? (stats.ugly_votes / stats.vote_count) * 100
+        : 0;
+    });
 
     // 4. Map and merge data
     let products = supabaseProducts.map((sp: SupabaseProduct) =>
@@ -78,7 +75,7 @@ export async function getProducts(filters?: {
 }
 
 /**
- * Fetches a single product by ID from Supabase with vote stats from Neon
+ * Fetches a single product by ID from Supabase with vote stats from Supabase
  */
 export async function getProductById(id: number): Promise<Product | null> {
   try {
@@ -94,24 +91,24 @@ export async function getProductById(id: number): Promise<Product | null> {
       return null;
     }
 
-    // 2. Get vote stats from Neon
-    const voteStats = await sql`
-      SELECT
-        COUNT(*) as vote_count,
-        COUNT(CASE WHEN vote_type = 'ugly' THEN 1 END) as ugly_votes,
-        ROUND(COUNT(CASE WHEN vote_type = 'ugly' THEN 1 END)::numeric /
-              NULLIF(COUNT(*), 0) * 100, 1) as ugliness_percent
-      FROM votes
-      WHERE product_id = ${id}
-    `;
+    // 2. Get vote stats from Supabase
+    const { data: votes } = await supabase
+      .from('votes')
+      .select('vote_type')
+      .eq('product_id', id);
 
-    const stats = voteStats[0]
-      ? {
-          vote_count: parseInt(voteStats[0].vote_count) || 0,
-          ugly_votes: parseInt(voteStats[0].ugly_votes) || 0,
-          ugliness_percent: parseFloat(voteStats[0].ugliness_percent) || 0,
-        }
-      : undefined;
+    let stats = undefined;
+    if (votes && votes.length > 0) {
+      const vote_count = votes.length;
+      const ugly_votes = votes.filter((v) => v.vote_type === 'ugly').length;
+      const ugliness_percent = (ugly_votes / vote_count) * 100;
+
+      stats = {
+        vote_count,
+        ugly_votes,
+        ugliness_percent,
+      };
+    }
 
     return mapSupabaseToProduct(data, stats);
   } catch (error) {
