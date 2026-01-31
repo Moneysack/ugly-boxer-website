@@ -1,26 +1,258 @@
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap');
 @import "tailwindcss";
 
+/* UglyBoxer Neon Theme */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Neon Colors */
+  --ugly-pink: #FF10F0;
+  --ugly-green: #39FF14;
+  --ugly-yellow: #FFFF00;
+  --ugly-purple: #BF00FF;
+  --ugly-orange: #FF6700;
+  --ugly-cyan: #00FFFF;
+
+  /* Background */
+  --ugly-dark: #0D0D0D;
+  --ugly-darker: #050505;
+
+  /* Foreground */
+  --foreground: #ffffff;
+  --background: var(--ugly-darker);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Ugly Colors */
+  --color-ugly-pink: var(--ugly-pink);
+  --color-ugly-green: var(--ugly-green);
+  --color-ugly-yellow: var(--ugly-yellow);
+  --color-ugly-purple: var(--ugly-purple);
+  --color-ugly-orange: var(--ugly-orange);
+  --color-ugly-cyan: var(--ugly-cyan);
+  --color-ugly-dark: var(--ugly-dark);
+  --color-ugly-darker: var(--ugly-darker);
+
+  /* Fonts */
+  --font-comic: "Comic Sans MS", "Comic Neue", cursive;
+  --font-display: "Bangers", cursive;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Comic Neue", "Comic Sans MS", cursive;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 16, 240, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(57, 255, 20, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(191, 0, 255, 0.1) 0%, transparent 50%);
+}
+
+/* Neon Text Glow */
+.neon-text {
+  text-shadow:
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 20px currentColor,
+    0 0 40px currentColor;
+}
+
+.neon-text-pink {
+  color: var(--ugly-pink);
+  text-shadow:
+    0 0 5px var(--ugly-pink),
+    0 0 10px var(--ugly-pink),
+    0 0 20px var(--ugly-pink);
+}
+
+.neon-text-green {
+  color: var(--ugly-green);
+  text-shadow:
+    0 0 5px var(--ugly-green),
+    0 0 10px var(--ugly-green),
+    0 0 20px var(--ugly-green);
+}
+
+/* Neon Box Shadows */
+.neon-box-pink {
+  box-shadow:
+    0 0 5px var(--ugly-pink),
+    0 0 10px var(--ugly-pink),
+    0 0 20px var(--ugly-pink),
+    inset 0 0 5px rgba(255, 16, 240, 0.2);
+}
+
+.neon-box-green {
+  box-shadow:
+    0 0 5px var(--ugly-green),
+    0 0 10px var(--ugly-green),
+    0 0 20px var(--ugly-green),
+    inset 0 0 5px rgba(57, 255, 20, 0.2);
+}
+
+.neon-box-purple {
+  box-shadow:
+    0 0 5px var(--ugly-purple),
+    0 0 10px var(--ugly-purple),
+    0 0 20px var(--ugly-purple),
+    inset 0 0 5px rgba(191, 0, 255, 0.2);
+}
+
+/* Neon Buttons */
+.neon-button {
+  position: relative;
+  padding: 0.75rem 2rem;
+  border-radius: 9999px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.3s ease;
+  border: 2px solid currentColor;
+  background: transparent;
+  cursor: pointer;
+}
+
+.neon-button:hover {
+  transform: scale(1.05);
+}
+
+.neon-button:active {
+  transform: scale(0.95);
+}
+
+.neon-button-pink {
+  color: var(--ugly-pink);
+  border-color: var(--ugly-pink);
+}
+
+.neon-button-pink:hover {
+  background: var(--ugly-pink);
+  color: var(--ugly-dark);
+  box-shadow:
+    0 0 10px var(--ugly-pink),
+    0 0 20px var(--ugly-pink),
+    0 0 40px var(--ugly-pink);
+}
+
+.neon-button-green {
+  color: var(--ugly-green);
+  border-color: var(--ugly-green);
+}
+
+.neon-button-green:hover {
+  background: var(--ugly-green);
+  color: var(--ugly-dark);
+  box-shadow:
+    0 0 10px var(--ugly-green),
+    0 0 20px var(--ugly-green),
+    0 0 40px var(--ugly-green);
+}
+
+/* Card Styles */
+.ugly-card {
+  background: linear-gradient(135deg, var(--ugly-dark) 0%, var(--ugly-darker) 100%);
+  border: 2px solid var(--ugly-pink);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.ugly-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 10px var(--ugly-pink),
+    0 0 20px rgba(255, 16, 240, 0.3);
+}
+
+/* Price Tag */
+.price-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--ugly-green);
+  color: var(--ugly-dark);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-weight: bold;
+  box-shadow: 0 0 10px var(--ugly-green);
+}
+
+/* Badge */
+.ugly-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+/* Animations */
+@keyframes pulse-neon {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.8;
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+.animate-pulse-neon {
+  animation: pulse-neon 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-wiggle {
+  animation: wiggle 0.5s ease-in-out infinite;
+}
+
+/* Headings */
+h1, h2, h3 {
+  font-family: "Bangers", cursive;
+  letter-spacing: 0.05em;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ugly-darker);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ugly-pink);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ugly-purple);
 }
