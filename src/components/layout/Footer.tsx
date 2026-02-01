@@ -69,6 +69,21 @@ export function Footer() {
               </li>
             </ul>
           </div>
+
+          {/* Rechtliches */}
+          <div>
+            <h3 className="text-[var(--ugly-green)] font-bold uppercase tracking-wide mb-4">
+              Rechtliches
+            </h3>
+            <ul className="space-y-2">
+              <li>
+                <FooterLink href="/impressum">Impressum</FooterLink>
+              </li>
+              <li>
+                <FooterLink href="/datenschutz">Datenschutz</FooterLink>
+              </li>
+            </ul>
+          </div>
         </div>
 
         {/* Affiliate Disclosure */}
@@ -76,7 +91,10 @@ export function Footer() {
           <p className="text-gray-500 text-xs text-center">
             <strong>Affiliate Disclosure:</strong> We earn commissions from qualifying purchases
             made through links on this site. This helps us keep the ugly underwear dream alive!
-            Prices and availability are subject to change.
+            Prices and availability are subject to change.{' '}
+            <Link href="/impressum" className="text-[var(--ugly-pink)] hover:underline">
+              More details in our Impressum
+            </Link>.
           </p>
         </div>
 
