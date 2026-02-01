@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const motif = searchParams.get('motif') || undefined;
   const category = searchParams.get('category') || undefined;
-  const limit = parseInt(searchParams.get('limit') || '50');
+  const limit = parseInt(searchParams.get('limit') || '1000');
 
   try {
     const products = await getProducts({ motif, category, limit });
