@@ -14,9 +14,9 @@ export async function getProducts(filters?: {
     // Fetch products from Supabase
     let query = supabase.from('uglyboxer.com').select('*');
 
-    if (filters?.limit) {
-      query = query.limit(filters.limit);
-    }
+    // Always apply a reasonable limit (default to 1000 if not specified)
+    const limit = filters?.limit || 1000;
+    query = query.limit(limit);
 
     const { data: supabaseProducts, error } = await query;
 
