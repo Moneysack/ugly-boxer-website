@@ -1,6 +1,6 @@
 import { Header, Footer } from '@/components/layout';
 import { Leaderboard } from '@/components/features';
-import { sql } from '@/lib/db';
+import { getProducts } from '@/lib/product-service';
 import { RankedProduct } from '@/types';
 import Link from 'next/link';
 
@@ -11,27 +11,27 @@ export const metadata = {
 
 async function getRankedProducts(): Promise<RankedProduct[]> {
   try {
-    const rankings = await sql`
-      SELECT
-        p.*,
-        COUNT(v.id) as total_votes,
-        COUNT(CASE WHEN v.vote_type = 'ugly' THEN 1 END) as ugly_votes,
-        ROUND(COUNT(CASE WHEN v.vote_type = 'ugly' THEN 1 END)::numeric /
-              NULLIF(COUNT(v.id), 0) * 100, 1) as ugliness_percent
-      FROM products p
-      LEFT JOIN votes v ON p.id = v.product_id
-        AND v.created_at > NOW() - INTERVAL '7 days'
-      GROUP BY p.id
-      HAVING COUNT(v.id) > 0
-      ORDER BY ugly_votes DESC, total_votes DESC
-      LIMIT 20
-    `;
-    return rankings.map(r => ({
-      ...r,
-      total_votes: parseInt(r.total_votes) || 0,
-      ugly_votes: parseInt(r.ugly_votes) || 0,
-      ugliness_percent: parseFloat(r.ugliness_percent) || 0
-    })) as RankedProduct[];
+    // Get all products (voting not yet implemented)
+    const allProducts = await getProducts({ limit: 1000 });
+
+    // Filter and rank by ugliness (only products with votes)
+    const rankings = allProducts
+      .filter((p) => (p.vote_count || 0) > 0)
+      .sort((a, b) => {
+        const aUgly = a.ugly_votes || 0;
+        const bUgly = b.ugly_votes || 0;
+        if (aUgly !== bUgly) return bUgly - aUgly;
+        return (b.vote_count || 0) - (a.vote_count || 0);
+      })
+      .slice(0, 20)
+      .map(p => ({
+        ...p,
+        total_votes: p.vote_count || 0,
+        ugly_votes: p.ugly_votes || 0,
+        ugliness_percent: p.vote_count ? ((p.ugly_votes || 0) / p.vote_count * 100) : 0
+      })) as RankedProduct[];
+
+    return rankings;
   } catch (error) {
     console.error('Error fetching rankings:', error);
     return [];

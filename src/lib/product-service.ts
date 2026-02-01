@@ -3,7 +3,7 @@ import { Product, Price } from '@/types';
 import { mapSupabaseToProduct } from './product-mapper';
 
 /**
- * Fetches products from Supabase and enriches them with vote data from Supabase
+ * Fetches products from Supabase (NO VOTING)
  */
 export async function getProducts(filters?: {
   motif?: string;
@@ -11,8 +11,8 @@ export async function getProducts(filters?: {
   limit?: number;
 }): Promise<Product[]> {
   try {
-    // 1. Fetch products from Supabase
-    let query = supabase.from('UglyBoxers').select('*');
+    // Fetch products from Supabase
+    let query = supabase.from('uglyboxer.com').select('*');
 
     if (filters?.limit) {
       query = query.limit(filters.limit);
@@ -29,37 +29,12 @@ export async function getProducts(filters?: {
       return [];
     }
 
-    // 2. Get vote stats from Supabase for these products
-    const productIds = supabaseProducts.map((p: SupabaseProduct) => p.id);
-
-    const { data: votes } = await supabase
-      .from('votes')
-      .select('product_id, vote_type')
-      .in('product_id', productIds);
-
-    // 3. Aggregate votes by product
-    const voteStatsMap = new Map<number, { vote_count: number; ugly_votes: number; ugliness_percent: number }>();
-
-    votes?.forEach((vote) => {
-      const current = voteStatsMap.get(vote.product_id) || { vote_count: 0, ugly_votes: 0, ugliness_percent: 0 };
-      current.vote_count++;
-      if (vote.vote_type === 'ugly') current.ugly_votes++;
-      voteStatsMap.set(vote.product_id, current);
-    });
-
-    // Calculate ugliness percentages
-    voteStatsMap.forEach((stats, productId) => {
-      stats.ugliness_percent = stats.vote_count > 0
-        ? (stats.ugly_votes / stats.vote_count) * 100
-        : 0;
-    });
-
-    // 4. Map and merge data
+    // Map products (no vote stats)
     let products = supabaseProducts.map((sp: SupabaseProduct) =>
-      mapSupabaseToProduct(sp, voteStatsMap.get(sp.id))
+      mapSupabaseToProduct(sp)
     );
 
-    // 5. Apply client-side filters (since Supabase doesn't have these fields)
+    // Apply client-side filters
     if (filters?.motif) {
       products = products.filter((p) => p.motif === filters.motif);
     }
@@ -75,13 +50,12 @@ export async function getProducts(filters?: {
 }
 
 /**
- * Fetches a single product by ID from Supabase with vote stats from Supabase
+ * Fetches a single product by ID from Supabase (NO VOTING)
  */
 export async function getProductById(id: number): Promise<Product | null> {
   try {
-    // 1. Fetch product from Supabase
     const { data, error } = await supabase
-      .from('UglyBoxers')
+      .from('uglyboxer.com')
       .select('*')
       .eq('id', id)
       .single();
@@ -91,26 +65,7 @@ export async function getProductById(id: number): Promise<Product | null> {
       return null;
     }
 
-    // 2. Get vote stats from Supabase
-    const { data: votes } = await supabase
-      .from('votes')
-      .select('vote_type')
-      .eq('product_id', id);
-
-    let stats = undefined;
-    if (votes && votes.length > 0) {
-      const vote_count = votes.length;
-      const ugly_votes = votes.filter((v) => v.vote_type === 'ugly').length;
-      const ugliness_percent = (ugly_votes / vote_count) * 100;
-
-      stats = {
-        vote_count,
-        ugly_votes,
-        ugliness_percent,
-      };
-    }
-
-    return mapSupabaseToProduct(data, stats);
+    return mapSupabaseToProduct(data);
   } catch (error) {
     console.error('Error in getProductById:', error);
     return null;
@@ -125,7 +80,7 @@ export async function getProductPrices(productId: number): Promise<Price[]> {
   try {
     // Fetch affiliate URL from Supabase
     const { data } = await supabase
-      .from('UglyBoxers')
+      .from('uglyboxer.com')
       .select('affiliate_url, Name')
       .eq('id', productId)
       .single();
