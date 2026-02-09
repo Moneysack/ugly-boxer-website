@@ -44,7 +44,7 @@ export function Footer() {
                 <FooterLink href="/products">All Products</FooterLink>
               </li>
               <li>
-                <FooterLink href="/upload">Upload Your Own</FooterLink>
+                <FooterLink href="/ranking">Full Leaderboard</FooterLink>
               </li>
             </ul>
           </div>

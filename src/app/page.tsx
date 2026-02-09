@@ -5,11 +5,12 @@ import { Leaderboard } from '@/components/features';
 import { getProducts } from '@/lib/product-service';
 import { Product, RankedProduct } from '@/types';
 
+export const revalidate = 3600;
+
 async function getFeaturedProducts(): Promise<Product[]> {
   try {
-    const products = await getProducts({ limit: 8 });
-    // Shuffle for random featured products
-    return products.sort(() => Math.random() - 0.5);
+    const products = await getProducts({ limit: 12 });
+    return products;
   } catch (error) {
     console.error('Error fetching featured products:', error);
     return [];
@@ -20,7 +21,6 @@ async function getRankedProducts(): Promise<RankedProduct[]> {
   try {
     const allProducts = await getProducts({ limit: 100 });
 
-    // Filter and rank by ugliness
     const rankings = allProducts
       .filter((p) => (p.vote_count || 0) > 0)
       .sort((a, b) => {
@@ -38,20 +38,44 @@ async function getRankedProducts(): Promise<RankedProduct[]> {
   }
 }
 
+async function getProductCount(): Promise<number> {
+  try {
+    const products = await getProducts();
+    return products.length;
+  } catch {
+    return 0;
+  }
+}
+
 export default async function HomePage() {
-  const [featuredProducts, rankedProducts] = await Promise.all([
+  const [featuredProducts, rankedProducts, productCount] = await Promise.all([
     getFeaturedProducts(),
-    getRankedProducts()
+    getRankedProducts(),
+    getProductCount(),
   ]);
+
+  const websiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'UglyBoxer',
+    url: 'https://uglyboxer.com',
+    description: 'Vote on the ugliest underwear and find the best prices!',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: 'https://uglyboxer.com/products?q={search_term_string}',
+      'query-input': 'required name=search_term_string',
+    },
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
 
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
+
       <main className="flex-grow">
         {/* Hero Section */}
         <section className="relative py-20 px-4 text-center overflow-hidden">
-          {/* Background decoration */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-10 left-10 text-8xl opacity-20 animate-float">🩲</div>
             <div className="absolute bottom-10 right-10 text-8xl opacity-20 animate-float" style={{ animationDelay: '1s' }}>🤮</div>
@@ -82,7 +106,7 @@ export default async function HomePage() {
 
             {/* Stats */}
             <div className="mt-12 grid grid-cols-3 gap-8 max-w-md mx-auto">
-              <StatBox number="50+" label="Ugly Boxers" />
+              <StatBox number={`${productCount}+`} label="Ugly Boxers" />
               <StatBox number="5" label="Shops" />
               <StatBox number="∞" label="Bad Taste" />
             </div>

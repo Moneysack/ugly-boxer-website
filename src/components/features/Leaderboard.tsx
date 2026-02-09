@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { RankedProduct } from '@/types';
+import { generateSlug } from '@/lib/slug-utils';
 
 interface LeaderboardProps {
   products: RankedProduct[];
@@ -36,7 +37,7 @@ function LeaderboardItem({ product }: { product: RankedProduct }) {
   const isTopThree = product.rank <= 3;
 
   return (
-    <Link href={`/products/${product.id}`}>
+    <Link href={`/products/${product.id}-${generateSlug(product.name)}`}>
       <div className={`
         flex items-center gap-4 p-4 rounded-xl transition-all
         ${isTopThree ? 'ugly-card' : 'bg-[var(--ugly-dark)] border border-[var(--ugly-dark)] hover:border-[var(--ugly-pink)]'}
@@ -56,7 +57,7 @@ function LeaderboardItem({ product }: { product: RankedProduct }) {
         <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
           <Image
             src={product.image_url}
-            alt={product.name}
+            alt={`${product.name} - #${product.rank} Ugliest Underwear`}
             fill
             className="object-cover"
           />

@@ -1,8 +1,7 @@
-'use client';
-
 import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '@/types';
+import { generateSlug } from '@/lib/slug-utils';
 
 interface ProductCardProps {
   product: Product;
@@ -14,7 +13,7 @@ export function ProductCard({ product, showVotes = false, rank }: ProductCardPro
   const minPrice = product.min_price;
 
   return (
-    <Link href={`/products/${product.id}`}>
+    <Link href={`/products/${product.id}-${generateSlug(product.name)}`}>
       <article className="ugly-card group cursor-pointer relative">
         {/* Rank Badge */}
         {rank && (
@@ -35,7 +34,7 @@ export function ProductCard({ product, showVotes = false, rank }: ProductCardPro
         <div className="relative aspect-square overflow-hidden bg-[var(--ugly-dark)]">
           <Image
             src={product.image_url}
-            alt={product.name}
+            alt={`${product.name} - ${product.motif} Underwear`}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-110"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"

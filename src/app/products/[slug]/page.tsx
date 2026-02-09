@@ -1,87 +1,122 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Header, Footer } from '@/components/layout';
-import { getProductById, getProductPrices } from '@/lib/product-service';
-import { notFound } from 'next/navigation';
+import { getProductById, getProductPrices, getProducts, getRelatedProducts } from '@/lib/product-service';
+import { RelatedProducts } from '@/components/features/RelatedProducts';
+import { extractIdFromSlug, generateSlug } from '@/lib/slug-utils';
+import { notFound, redirect } from 'next/navigation';
 
 interface ProductPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }
 
-interface ProductWithPrices {
-  id: number;
-  name: string;
-  description: string | null;
-  motif: string;
-  category: string;
-  colors: string[];
-  image_url: string;
-  vote_count: number;
-  ugly_votes: number;
-  ugliness_percent: number;
-  prices: {
-    id: number;
-    price: number;
-    original_price: number | null;
-    affiliate_url: string;
-    shop: {
-      id: number;
-      name: string;
-      is_premium: boolean;
-    };
-  }[];
-}
+export const revalidate = 86400;
 
-async function getProduct(id: number): Promise<ProductWithPrices | null> {
-  try {
-    // Get product from Supabase with vote stats from Neon
-    const product = await getProductById(id);
-
-    if (!product) {
-      return null;
-    }
-
-    // Get Amazon affiliate link from Supabase
-    const prices = await getProductPrices(id);
-
-    return {
-      ...product,
-      prices,
-    } as ProductWithPrices;
-  } catch (error) {
-    console.error('Error fetching product:', error);
-    return null;
-  }
+export async function generateStaticParams() {
+  const products = await getProducts();
+  return products.map((product) => ({
+    slug: `${product.id}-${generateSlug(product.name)}`,
+  }));
 }
 
 export async function generateMetadata({ params }: ProductPageProps) {
-  const { id } = await params;
-  const product = await getProduct(parseInt(id));
+  const { slug } = await params;
+  const id = extractIdFromSlug(slug);
+  if (!id) return { title: 'Product Not Found' };
 
-  if (!product) {
-    return { title: 'Product Not Found' };
-  }
+  const product = await getProductById(id);
+  if (!product) return { title: 'Product Not Found' };
+
+  const canonicalSlug = `${product.id}-${generateSlug(product.name)}`;
+  const description = `${product.name} - Ugly ${product.motif} underwear. Vote and buy on Amazon! One of the ugliest boxers on UglyBoxer.`;
 
   return {
-    title: `${product.name} - UglyBoxer`,
-    description: product.description || `Check out ${product.name} - one of the ugliest underwear on the internet! Vote and buy on Amazon.`,
+    title: `${product.name} - Ugly ${product.motif} Underwear`,
+    description,
+    alternates: {
+      canonical: `/products/${canonicalSlug}`,
+    },
+    openGraph: {
+      title: `${product.name} | UglyBoxer`,
+      description,
+      images: [{ url: product.image_url, width: 679, height: 679, alt: `${product.name} - Ugly ${product.motif} Boxers` }],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${product.name} | UglyBoxer`,
+      description,
+      images: [product.image_url],
+    },
   };
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const { id } = await params;
-  const product = await getProduct(parseInt(id));
+  const { slug } = await params;
+  const id = extractIdFromSlug(slug);
 
+  if (!id) {
+    notFound();
+  }
+
+  const product = await getProductById(id);
   if (!product) {
     notFound();
   }
 
-  const prices = product.prices || [];
-  const lowestPrice = prices.length > 0 ? Math.min(...prices.map(p => p.price)) : null;
+  // Redirect to canonical slug URL if needed (e.g., /products/42 → /products/42-sharky)
+  const canonicalSlug = `${product.id}-${generateSlug(product.name)}`;
+  if (slug !== canonicalSlug) {
+    redirect(`/products/${canonicalSlug}`);
+  }
+
+  const [prices, relatedProducts] = await Promise.all([
+    getProductPrices(id),
+    getRelatedProducts(product, 6),
+  ]);
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    image: product.image_url,
+    description: `${product.name} - Ugly ${product.motif} underwear on UglyBoxer`,
+    brand: { '@type': 'Brand', name: 'UglyBoxer' },
+    ...(prices.length > 0 && prices[0].affiliate_url ? {
+      offers: {
+        '@type': 'Offer',
+        url: prices[0].affiliate_url,
+        priceCurrency: 'EUR',
+        availability: 'https://schema.org/InStock',
+        seller: { '@type': 'Organization', name: 'Amazon' },
+      },
+    } : {}),
+    ...(product.vote_count && product.vote_count > 0 ? {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: ((product.ugliness_percent || 0) / 20).toFixed(1),
+        bestRating: 5,
+        ratingCount: product.vote_count,
+      },
+    } : {}),
+  };
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://uglyboxer.com' },
+      { '@type': 'ListItem', position: 2, name: 'Products', item: 'https://uglyboxer.com/products' },
+      { '@type': 'ListItem', position: 3, name: product.name, item: `https://uglyboxer.com/products/${canonicalSlug}` },
+    ],
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
+
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <main className="flex-grow py-8 px-4">
         <div className="max-w-6xl mx-auto">
@@ -100,21 +135,25 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <div className="relative aspect-square">
                 <Image
                   src={product.image_url}
-                  alt={product.name}
+                  alt={`${product.name} - Ugly ${product.motif} Boxers on UglyBoxer`}
                   fill
                   className="object-cover"
                   priority
                 />
 
-                {/* Badges */}
+                {/* Badges - clickable for cross-linking */}
                 <div className="absolute top-4 left-4 flex flex-col gap-2">
-                  <span className="ugly-badge bg-[var(--ugly-purple)] text-white">
-                    {product.motif}
-                  </span>
-                  {product.category && (
-                    <span className="ugly-badge bg-[var(--ugly-green)] text-black">
-                      {product.category}
+                  <Link href={`/products?motif=${product.motif}`}>
+                    <span className="ugly-badge bg-[var(--ugly-purple)] text-white cursor-pointer hover:opacity-80 transition-opacity">
+                      {product.motif}
                     </span>
+                  </Link>
+                  {product.category && (
+                    <Link href={`/products?category=${product.category}`}>
+                      <span className="ugly-badge bg-[var(--ugly-green)] text-black cursor-pointer hover:opacity-80 transition-opacity">
+                        {product.category}
+                      </span>
+                    </Link>
                   )}
                 </div>
 
@@ -170,7 +209,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     </div>
                     <div>
                       <div className="text-2xl font-bold text-red-500">
-                        {product.vote_count - (product.ugly_votes || 0)}
+                        {(product.vote_count || 0) - (product.ugly_votes || 0)}
                       </div>
                       <div className="text-gray-400 text-sm">Not Ugly</div>
                     </div>
@@ -195,7 +234,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                       rel="noopener noreferrer"
                       className="neon-button neon-button-green text-lg py-4 px-8 inline-block w-full"
                     >
-                      🛒 Buy on Amazon
+                      Buy on Amazon
                     </a>
                     <p className="text-gray-500 text-xs mt-4">
                       * We may earn a commission from purchases made through this link.
@@ -222,6 +261,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </div>
             </div>
           </div>
+
+          {/* Related Products - Cross-linking */}
+          <RelatedProducts products={relatedProducts} />
         </div>
       </main>
 

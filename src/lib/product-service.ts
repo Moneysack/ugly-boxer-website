@@ -1,20 +1,19 @@
+import { cache } from 'react';
 import { supabase, SupabaseProduct } from './supabase';
 import { Product, Price } from '@/types';
 import { mapSupabaseToProduct } from './product-mapper';
 
 /**
- * Fetches products from Supabase (NO VOTING)
+ * Fetches products from Supabase with React cache() for request deduplication.
  */
-export async function getProducts(filters?: {
+export const getProducts = cache(async (filters?: {
   motif?: string;
   category?: string;
   limit?: number;
-}): Promise<Product[]> {
+}): Promise<Product[]> => {
   try {
-    // Fetch products from Supabase
     let query = supabase.from('uglyboxer.com').select('*');
 
-    // Always apply a reasonable limit (default to 1000 if not specified)
     const limit = filters?.limit || 1000;
     query = query.limit(limit);
 
@@ -29,12 +28,10 @@ export async function getProducts(filters?: {
       return [];
     }
 
-    // Map products (no vote stats)
     let products = supabaseProducts.map((sp: SupabaseProduct) =>
       mapSupabaseToProduct(sp)
     );
 
-    // Apply client-side filters
     if (filters?.motif) {
       products = products.filter((p) => p.motif === filters.motif);
     }
@@ -47,7 +44,7 @@ export async function getProducts(filters?: {
     console.error('Error in getProducts:', error);
     return [];
   }
-}
+});
 
 /**
  * Fetches a single product by ID from Supabase (NO VOTING)
@@ -78,7 +75,6 @@ export async function getProductById(id: number): Promise<Product | null> {
  */
 export async function getProductPrices(productId: number): Promise<Price[]> {
   try {
-    // Fetch affiliate URL from Supabase
     const { data } = await supabase
       .from('uglyboxer.com')
       .select('affiliate_url, Name')
@@ -86,13 +82,12 @@ export async function getProductPrices(productId: number): Promise<Price[]> {
       .single();
 
     if (data?.affiliate_url) {
-      // Format as a single price entry
       return [
         {
           id: -1,
           product_id: productId,
           shop_id: -1,
-          price: 0, // Price not available in Supabase
+          price: 0,
           original_price: null,
           affiliate_url: data.affiliate_url,
           in_stock: true,
@@ -115,4 +110,32 @@ export async function getProductPrices(productId: number): Promise<Price[]> {
     console.error('Error in getProductPrices:', error);
     return [];
   }
+}
+
+/**
+ * Gets related products based on motif/category/color matching.
+ * Returns up to `limit` products, excluding the current product.
+ */
+export async function getRelatedProducts(
+  currentProduct: Product,
+  limit: number = 6
+): Promise<Product[]> {
+  const allProducts = await getProducts();
+  const others = allProducts.filter((p) => p.id !== currentProduct.id);
+
+  const scored = others.map((p) => {
+    let score = 0;
+    if (p.motif === currentProduct.motif) score += 3;
+    if (p.category === currentProduct.category) score += 2;
+    const sharedColors = p.colors.filter((c) => currentProduct.colors.includes(c));
+    score += sharedColors.length;
+    return { product: p, score };
+  });
+
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return Math.random() - 0.5;
+  });
+
+  return scored.slice(0, limit).map((s) => s.product);
 }

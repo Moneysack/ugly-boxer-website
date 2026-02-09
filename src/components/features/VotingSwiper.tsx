@@ -163,7 +163,7 @@ function SwipeCard({ product, onVote, exitDirection }: SwipeCardProps) {
         <div className="relative h-3/4">
           <Image
             src={product.image_url}
-            alt={product.name}
+            alt={`${product.name} - Vote: Ugly or Not?`}
             fill
             className="object-cover"
             priority
