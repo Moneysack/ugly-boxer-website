@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Header, Footer } from '@/components/layout';
 import { ProductGrid } from '@/components/features';
 import { Leaderboard } from '@/components/features';
+import { SectionAd } from '@/components/ads/SectionAd';
 import { getProducts } from '@/lib/product-service';
 import { Product, RankedProduct } from '@/types';
 
@@ -143,6 +144,9 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {/* Ad between How It Works and Leaderboard */}
+        <SectionAd slot="HOME_TOP" format="horizontal" />
+
         {/* Leaderboard Preview */}
         <section className="py-16 px-4">
           <div className="max-w-4xl mx-auto">
@@ -171,6 +175,9 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {/* Ad between Featured Products and Categories */}
+        <SectionAd slot="HOME_MID" format="auto" />
+
         {/* Categories */}
         <section className="py-16 px-4">
           <div className="max-w-6xl mx-auto">
@@ -190,6 +197,9 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Ad between Categories and CTA */}
+        <SectionAd slot="HOME_BOTTOM" format="horizontal" />
 
         {/* CTA */}
         <section className="py-20 px-4 text-center">

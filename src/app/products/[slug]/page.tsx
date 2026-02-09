@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Header, Footer } from '@/components/layout';
+import { SectionAd } from '@/components/ads/SectionAd';
 import { getProductById, getProductPrices, getProducts, getRelatedProducts } from '@/lib/product-service';
 import { RelatedProducts } from '@/components/features/RelatedProducts';
 import { extractIdFromSlug, generateSlug } from '@/lib/slug-utils';
@@ -259,8 +260,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   Browse More
                 </Link>
               </div>
+
+              {/* Ad under action buttons */}
+              <div className="mt-6">
+                <SectionAd slot="PRODUCT_MID" format="rectangle" />
+              </div>
             </div>
           </div>
+
+          {/* Ad between product info and related products */}
+          <SectionAd slot="PRODUCT_BOTTOM" format="horizontal" />
 
           {/* Related Products - Cross-linking */}
           <RelatedProducts products={relatedProducts} />

@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { Header, Footer } from '@/components/layout';
+import { SectionAd } from '@/components/ads/SectionAd';
 import { getProducts } from '@/lib/product-service';
 import { ProductsFilter } from '@/components/features/ProductsFilter';
 
@@ -56,6 +57,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               {allProducts.length} hideous options to choose from
             </p>
           </div>
+
+          {/* Ad above product grid */}
+          <SectionAd slot="PRODUCTS_TOP" format="horizontal" />
 
           {/* Client component handles interactive filtering/sorting */}
           <ProductsFilter

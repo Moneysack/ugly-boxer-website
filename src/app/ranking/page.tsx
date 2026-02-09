@@ -1,5 +1,6 @@
 import { Header, Footer } from '@/components/layout';
 import { Leaderboard } from '@/components/features';
+import { SectionAd } from '@/components/ads/SectionAd';
 import { getProducts } from '@/lib/product-service';
 import { RankedProduct } from '@/types';
 import Link from 'next/link';
@@ -70,6 +71,9 @@ export default async function RankingPage() {
 
           {/* Leaderboard */}
           <Leaderboard products={rankedProducts} />
+
+          {/* Ad after leaderboard */}
+          <SectionAd slot="RANKING_MID" format="horizontal" />
 
           {/* Stats */}
           <div className="mt-12 grid grid-cols-3 gap-4 text-center">
